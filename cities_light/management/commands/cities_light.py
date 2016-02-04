@@ -183,12 +183,46 @@ It is possible to force the import of files which weren't downloaded using the
                             del self._region_codes
                         self.translation_parse(items)
 
-                    reset_queries()
+                ###### ~ 1,5 min
+                #     reset_queries()
+                # #### ~ 1.5 min
+                #     i += 1
+                #     progress.update(i)
+                # ### ~1.5 min
+                #     self._travis()
+                #############################
 
-                    i += 1
-                    progress.update(i)
+                # if url in CITY_SOURCES:
+                #     for items in geonames.parse():
+                #         self.city_import(items)
+                # elif url in REGION_SOURCES:
+                #     for items in geonames.parse():
+                #         self.region_import(items)
+                # elif url in COUNTRY_SOURCES:
+                #     for items in geonames.parse():
+                #         self.country_import(items)
+                # elif url in TRANSLATION_SOURCES:
+                #     # if not hasattr(self, 'translation_data'):
+                #     #     self.country_ids = list(Country.objects.values_list('geoname_id',
+                #     #         flat=True))
+                #     #     self.region_ids = list(Region.objects.values_list('geoname_id',
+                #     #         flat=True))
+                #     #     self.city_ids = list(City.objects.values_list('geoname_id',
+                #     #         flat=True))
+                #     #     self.translation_data = collections.OrderedDict(((Country, {}),(Region, {}),(City, {}),))
+                #
+                #     for items in geonames.parse():
+                #         # free some memory
+                #         if getattr(self, '_country_codes', False):
+                #             del self._country_codes
+                #         if getattr(self, '_region_codes', False):
+                #             del self._region_codes
+                #         self.translation_parse(items)
 
-                    self._travis()
+
+                #############################
+
+
 
                 progress.finish()
 
@@ -418,7 +452,8 @@ It is possible to force the import of files which weren't downloaded using the
                 (City, {}),
             ))
 
-        connection.close()
+        # ~2min
+        # connection.close()
 
         try:
             translation_items_pre_import.send(sender=self, items=items)

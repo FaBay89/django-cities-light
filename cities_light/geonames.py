@@ -85,6 +85,27 @@ class Geonames(object):
             zip_file.extract(file_name, DATA_DIR)
 
     def parse(self):
+        # if not six.PY3:
+        #     strip = str.strip
+        #     split = str.split
+        #     with open(self.file_path, mode='r') as file:
+        #         for line in file:
+        #             line = strip(line)
+        #             if not line or line[0] == '#':
+        #                 continue
+        #             # yield [e.strip() for e in line.split('\t')]
+        #             yield map(strip, split(line, '\t'))
+        # else:
+        #     strip = str.strip
+        #     split = str.split
+        #     with open(self.file_path, encoding='utf-8', mode='r') as file:
+        #         for line in file:
+        #             line = strip(line)
+        #             if not line or line[0] == '#':
+        #                 continue
+        #             # yield [e.strip() for e in line.split('\t')]
+        #             yield list(map(strip, split(line, '\t')))
+
         if not six.PY3:
             file = open(self.file_path, 'r')
         else:
@@ -92,6 +113,7 @@ class Geonames(object):
         line = True
 
         for line in file:
+
             if not six.PY3:
                 # in python3 this is already an unicode
                 line = line.decode('utf8')
