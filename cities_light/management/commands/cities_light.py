@@ -184,12 +184,12 @@ It is possible to force the import of files which weren't downloaded using the
                         self.translation_parse(items)
 
                 ###### ~ 1,5 min
-                    reset_queries()
+                #    reset_queries()
                 # #### ~ 1.5 min
-                    i += 1
-                    progress.update(i)
+                #    i += 1
+                #    progress.update(i)
                 # ### ~1.5 min
-                    self._travis()
+                #    self._travis()
                 #############################
 
                 # if url in CITY_SOURCES:
@@ -453,7 +453,7 @@ It is possible to force the import of files which weren't downloaded using the
             ))
 
         # ~2min
-        connection.close()
+        # connection.close()
 
         try:
             translation_items_pre_import.send(sender=self, items=items)
