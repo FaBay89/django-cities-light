@@ -9,6 +9,8 @@ import os.path
 import logging
 import optparse
 import sys
+from decimal import Decimal
+
 if sys.platform != 'win32':
     import resource
 
@@ -123,6 +125,7 @@ It is possible to force the import of files which weren't downloaded using the
             REGION_SOURCES,
             CITY_SOURCES,
             TRANSLATION_SOURCES,
+            POSTAL_CODE_SOURCES,
         ))
 
         for url in sources:
@@ -182,6 +185,8 @@ It is possible to force the import of files which weren't downloaded using the
                         if getattr(self, '_region_codes', False):
                             del self._region_codes
                         self.translation_parse(items)
+                    elif url in POSTAL_CODE_SOURCES:
+                        self.postal_parse(items)
 
                 ###### ~ 1,5 min
                 #    reset_queries()
@@ -237,6 +242,8 @@ It is possible to force the import of files which weren't downloaded using the
 
         self.logger.info('Importing parsed translation in the database')
         self.translation_import()
+        self.logger.info('Importing parsed postal codes in the database')
+        self.postal_import()
 
         with open(install_file_path, 'wb+') as f:
             pickle.dump(datetime.datetime.now(), f)
@@ -431,6 +438,10 @@ It is possible to force the import of files which weren't downloaded using the
             city.geoname_id = items[ICity.geonameid]
             save = True
 
+        if not city.admin3_code and items[ICity.admin3Code]:
+            city.admin3_code = items[ICity.admin3Code]
+            save = True
+
         city_items_post_import.send(sender=self, instance=city,
             items=items, save=save)
 
@@ -493,6 +504,31 @@ It is possible to force the import of files which weren't downloaded using the
         self.translation_data[model_class][item_geoid][item_lang].append(
             item_name)
 
+    def postal_parse(self, items):
+        if not hasattr(self, 'postal_data'):
+            self.postal_data = {}
+
+        item_country_code = items[IPostal.countryCode]
+
+        if INCLUDE_COUNTRIES and item_country_code not in INCLUDE_COUNTRIES:
+            return
+
+        item_admin3 = items[IPostal.admin3Code]
+        if not item_admin3:
+            item_admin3 = 'NoneAdmin3'
+        item_name = force_text(items[IPostal.placeName])
+
+        if item_country_code not in self.postal_data:
+            self.postal_data[item_country_code] = {}
+        if item_admin3 not in self.postal_data[item_country_code]:
+            self.postal_data[item_country_code][item_admin3] = {}
+        if item_name not in self.postal_data[item_country_code][item_admin3]:
+            self.postal_data[item_country_code][item_admin3][item_name] = []
+
+        self.postal_data[item_country_code][item_admin3][item_name].append(
+            (items[IPostal.postalCode], items[IPostal.longitude], items[IPostal.latitude])
+        )
+
     def translation_import(self):
         data = getattr(self, 'translation_data', None)
 
@@ -545,6 +581,78 @@ It is possible to force the import of files which weren't downloaded using the
                 if save:
                     model.save()
 
+                i += 1
+                progress.update(i)
+
+        progress.finish()
+
+    def postal_import(self):
+        data = getattr(self, 'postal_data', None)
+
+        if not data:
+            return
+
+        max = 0
+        for country, country_data in data.items():
+            max += len(country_data.keys())
+
+        i = 0
+        progress = progressbar.ProgressBar(
+            max_value=max,
+            widgets=self.widgets
+        ).start()
+
+        for country_code, country_data in data.items():
+            cities = City.objects.filter(country__code2__iexact=country_code)
+
+            for admin3_code, admin3_data in country_data.items():
+                if admin3_code != 'NoneAdmin3':
+                    cities_admin3 = cities.filter(admin3=admin3_code)
+
+                for name, postal_code_data in admin3_data.items():
+                    found_cities = City.objects.none()
+                    if admin3_code != 'NoneAdmin3':
+                        found_cities = cities_admin3.filter(name=name)
+                        if len(found_cities) < 1:
+                            found_cities = cities_admin3.filter(alternate_names__icontains=name)
+                    if len(found_cities) < 1:
+                        found_cities = cities.filter(name=name)
+                    if len(found_cities) < 1:
+                        found_cities = cities.filter(alternate_names__icontains=name)
+                    if len(found_cities) < 1:
+                        continue
+                    if len(found_cities) == 1:
+                        city = found_cities.first()
+                        if not city.postal_codes:
+                            postal_codes = set()
+                        else:
+                            postal_codes = set(sorted(city.postal_codes.split(',')))
+                        for (postal_code, long, lat) in postal_code_data:
+                            postal_codes.add(postal_code)
+                        postal_codes = u','.join(sorted(postal_codes))
+                        if city.postal_codes != postal_codes:
+                            city.postal_codes = postal_codes
+                            city.save()
+                    else:
+                        for (postal_code, long, lat) in postal_code_data:
+                            city = found_cities.filter(longitude__gt=Decimal(long)-Decimal(0.5))\
+                                                .filter(longitude__lt=Decimal(long)+Decimal(0.5))\
+                                                .filter(latitude__gt=Decimal(lat)-Decimal(0.5))\
+                                                .filter(latitude__lt=Decimal(lat)+Decimal(0.5))
+                            if len(city) == 1:
+                                city = city.first()
+                                if not city.postal_codes:
+                                    postal_codes = set()
+                                else:
+                                    postal_codes = set(sorted(city.postal_codes.split(',')))
+                                postal_codes.add(postal_code)
+                                postal_codes = u','.join(sorted(postal_codes))
+                                if city.postal_codes != postal_codes:
+                                    city.postal_codes = postal_codes
+                                    city.save()
+                            else:
+                                self.logger.warning('For %s, %s match more than one city: %s'
+                                                    % (name, country_code, u','.join([c.name for c in found_cities])))
                 i += 1
                 progress.update(i)
 

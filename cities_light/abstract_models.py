@@ -150,6 +150,8 @@ class AbstractCity(Base):
     population = models.BigIntegerField(null=True, blank=True, db_index=True)
     feature_code = models.CharField(max_length=10, null=True, blank=True,
                                     db_index=True)
+    admin3_code = models.CharField(max_length=20, null=True, blank=True)
+    postal_codes = models.TextField(null=True, blank=True, default='')
 
     class Meta(Base.Meta):
         unique_together = (('region', 'name'), ('region', 'slug'))
