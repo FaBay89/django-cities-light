@@ -93,10 +93,10 @@ import os.path
 from django.conf import settings
 
 __all__ = ['COUNTRY_SOURCES', 'REGION_SOURCES', 'CITY_SOURCES',
-    'TRANSLATION_LANGUAGES', 'TRANSLATION_SOURCES', 'SOURCES', 'DATA_DIR',
+    'TRANSLATION_LANGUAGES', 'TRANSLATION_SOURCES', 'POSTAL_CODE_SOURCES', 'SOURCES', 'DATA_DIR',
     'INDEX_SEARCH_NAMES', 'INCLUDE_COUNTRIES', 'INCLUDE_CITY_TYPES',
     'DEFAULT_APP_NAME', 'CITIES_LIGHT_APP_NAME',
-    'ICountry', 'IRegion', 'ICity', 'IAlternate']
+    'ICountry', 'IRegion', 'ICity', 'IAlternate', 'IPostal']
 
 COUNTRY_SOURCES = getattr(settings, 'CITIES_LIGHT_COUNTRY_SOURCES',
     ['http://download.geonames.org/export/dump/countryInfo.txt'])
@@ -106,11 +106,14 @@ CITY_SOURCES = getattr(settings, 'CITIES_LIGHT_CITY_SOURCES',
     ['http://download.geonames.org/export/dump/cities15000.zip'])
 TRANSLATION_SOURCES = getattr(settings, 'CITIES_LIGHT_TRANSLATION_SOURCES',
     ['http://download.geonames.org/export/dump/alternateNames.zip'])
+POSTAL_CODE_SOURCES = getattr(settings, 'CITIES_LIGHT_POSTAL_CODE_SOURCES',
+    ['http://download.geonames.org/export/zip/allCountries.zip'])
 TRANSLATION_LANGUAGES = getattr(settings, 'CITIES_LIGHT_TRANSLATION_LANGUAGES',
     ['es', 'en', 'pt', 'de', 'pl', 'abbr'])
 
 SOURCES = list(COUNTRY_SOURCES) + list(REGION_SOURCES) + list(CITY_SOURCES)
 SOURCES += TRANSLATION_SOURCES
+SOURCES += POSTAL_CODE_SOURCES
 
 DATA_DIR = getattr(settings, 'CITIES_LIGHT_DATA_DIR',
     os.path.normpath(os.path.join(
@@ -214,3 +217,22 @@ class IAlternate:
     isShort = 5
     isColloquial = 6
     isHistoric = 7
+
+
+class IPostal:
+    """
+    Postal code field indexes in geonames.
+    Description of fields: http://download.geonames.org/export/zip/readme.txt
+    """
+    countryCode = 0
+    postalCode = 1
+    placeName = 2
+    admin1Name = 3
+    admin1Code = 4
+    admin2Name = 5
+    admin2Code = 6
+    admin3Name = 7
+    admin3Code = 8
+    latitude = 9
+    longitude = 10
+    accuracy = 11
